@@ -12,7 +12,7 @@ grammar = r"""
 start = { expression ';' } $;
 
 expression = assignment | call | op | literal | datastructure |
-controlstructure | name ;
+controlstructure | name  | ('(' expression ')');
 
 assignment = assignment:(name '=' expression) ;
 
@@ -47,6 +47,10 @@ expressions = { expression ';' }+ ;
 """
 
 def parse_expression(expr, counter):
+    # support parantheses
+    if len(expr) == 3 and expr[0] == "(" and expr[2] == ")":
+        expr = expr[1]
+
     type_, values = expr.popitem()
 
     if type_ == "assignment":

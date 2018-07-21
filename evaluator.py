@@ -6,6 +6,7 @@ _binops = {
     "*": operator.mul,
     "/": operator.truediv,
     "==": operator.eq,
+    "!=": operator.ne,
     "and": operator.and_,
     "or": operator.or_,
 }
@@ -13,6 +14,20 @@ _unops = {
     "!": operator.not_,
     "-": operator.neg,
 }
+
+def unevaluate(something, evaluated):
+    if isinstance(something, tuple) and len(something) == 3:
+        evaluated.pop(something[2])
+        unevaluate(something[1], evaluated)
+    elif isinstance(something, dict):
+        for key in something:
+            unevaluate(something[key], evaluated)
+    elif isinstance(something, list):
+        for element in something:
+            unevaluate(element, evaluated)
+    elif isinstance(something, tuple):
+        for element in something:
+            unevaluate(element, evaluated)
 
 def evaluate(type_, payload, number, expressions, evaluated, environment):
     if number in evaluated:
@@ -80,12 +95,68 @@ def evaluate(type_, payload, number, expressions, evaluated, environment):
             expressions.append(right)
         return False
     elif type_ == "if":
-        ...
+        condition = payload["condition"]
+        body = payload["body"]
+        if condition[2] in evaluated:
+            if evaluated[condition[2]]:  # actual boolean test
+                expressions.extend(body)
+                evaluated[number] = True
+            else:
+                evaluated[number] = False
+            return True
+        else:
+            expressions.append(condition)
+        return False
     elif type_ == "while":
-        ...
+        condition = payload["condition"]
+        body = payload["body"]
+        if condition[2] in evaluated:
+            if evaluated[condition[2]]:  # actual boolean test
+                expressions.extend(body)
+                evaluated[number] = True
+                # retry after we are finished:
+                # This works (hopefully) by putting a check on the queue. When
+                # it runs, it first checks whether the while loop has
+                # terminated (whether all inner expressions are evaluated). If
+                # not, it reschedules itself. If yes, it invalidates
+                # (unevaluates) all inner expressions recursively and then puts
+                # the while loop back on the queue.
+                expressions.append((
+                    "while!",
+                    payload,
+                    ~number,
+                ))
+            else:
+                # this will (hopefully) eventually be reached. When it is, we
+                # don't schedule a while! check
+                evaluated[number] = False
+            return True
+        else:
+            expressions.append(condition)
+        return False
+    elif type_ == "while!":
+        condition = payload["condition"]
+        body = payload["body"]
+        # First check if the while loop is done: In that case we reschedule
+        if any(expr[2] not in evaluated for expr in body):
+            return False
+        # Next, we unevaluate all inner expressions
+        unevaluate(body, evaluated)
+        unevaluate(condition, evaluated)
+        evaluated.pop(~number)
+
+        # Finally, we reschedule the while loop:
+        expressions.append(("while", payload, ~number))
+        return True
     elif type_ == "for":
         ...
     elif type_ == "list":
-        ...
+        not_evaluated = [item for item in payload if item[2] not in evaluated]
+        if not_evaluated:
+            expressions.extend(not_evaluated)
+            return False
+        else:
+            evaluated[number] = [evaluated[item[2]] for item in payload]
+            return True
     else:
         raise NotImplementedError
