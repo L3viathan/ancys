@@ -1,0 +1,37 @@
+x = 1 + sqrt(4);  # no idea if 1 is "evaluated" first or sqrt(4)
+y = 7;  # could be eval'd before or after x
+
+# should _never_ crash: if executed before one of the previous lines, should
+# hang when it encounters a variable that doesn't exist yet, until it does.
+print(x * y);
+# That means that unknown variables either always cause something to hang
+# (forever), or we check for each variable if it's ever assigned (in that
+# scope?) and fail otherwise. For the second option we need scope, or for
+# scope not to exist
+
+for i in [1,2,3,4,5,6]{  # actually ordered
+    print(i);  # might still print out of order, because the print statements are
+    # enqueued in order, but others might be "faster"
+};
+
+
+# How would we enforce ordered output then?
+one = print(1);
+# two = one and print(2)  # nope, because while one might hang, the print won't
+# instead:
+if one { two = print (2); };
+if two { print(3); };
+# might want a shortcut for ordered actions? Or is that violating purity?
+
+
+# more principles:
+# - Everything is an expression
+# - No errors; instead expression returns some kind of error value, all Go-like.
+#   Except of course it won't return a tuple of value, maybe_eror, but just
+#   value; or in case of an error just error. That means a syntactically valid
+#   ancys program should never crash in a correct interpreter.
+# - ancys is a recursive backronym that stands for New Asynchronous Computation
+#   YCNAS System. Yes, really.
+
+
+while 3 == 3 { x = 3; };
