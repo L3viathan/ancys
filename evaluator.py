@@ -17,7 +17,7 @@ _unops = {
 
 def unevaluate(something, evaluated):
     if isinstance(something, tuple) and len(something) == 3:
-        evaluated.pop(something[2])
+        evaluated.pop(something[2], None)
         unevaluate(something[1], evaluated)
     elif isinstance(something, dict):
         for key in something:
@@ -148,8 +148,30 @@ def evaluate(type_, payload, number, expressions, evaluated, environment):
         # Finally, we reschedule the while loop:
         expressions.append(("while", payload, ~number))
         return True
-    elif type_ == "for":
-        ...
+    elif type_ in ["for", "for!"]:
+        name = payload["name"]
+        argument = payload["argument"]
+        body = payload["body"]
+        if argument[2] in evaluated:
+            if type_ == "for!" and any(expr[2] not in evaluated for expr in body):
+                # previous run isn't finished
+                return False
+            # unevaluate inner expressions
+            unevaluate(body, evaluated)
+
+            values = iter(evaluated[argument[2]])
+            evaluated[argument[2]] = values
+            try:
+                value = next(values)
+                environment[name] = value  # has to be evaluated already
+                expressions.extend(body)
+                expressions.append(("for!", payload, number))
+            except StopIteration:
+                evaluated[number] = True
+            return True
+        else:
+            expressions.append(argument)
+            return False
     elif type_ == "list":
         not_evaluated = [item for item in payload if item[2] not in evaluated]
         if not_evaluated:
