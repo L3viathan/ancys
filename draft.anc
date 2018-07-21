@@ -34,4 +34,4 @@ if two { print(3); };
 #   YCNAS System. Yes, really.
 
 
-while 3 == 3 { x = 3; };
+while x == 3 { x = 5; };

@@ -15,8 +15,10 @@ _unops = {
     "-": operator.neg,
 }
 
+literals = ["int", "float", "bool", "string"]
+
 def unevaluate(something, evaluated):
-    if isinstance(something, tuple) and len(something) == 3:
+    if isinstance(something, tuple) and len(something) == 3 and something[0] not in literals:
         evaluated.pop(something[2], None)
         unevaluate(something[1], evaluated)
     elif isinstance(something, dict):
@@ -32,7 +34,7 @@ def unevaluate(something, evaluated):
 def evaluate(type_, payload, number, expressions, evaluated, environment):
     if number in evaluated:
         return True
-    if type_ in ["int", "float", "bool", "string"]:
+    if type_ in literals:
         # can immediately evaluate these
         evaluated[number] = payload
         return True
@@ -165,8 +167,9 @@ def evaluate(type_, payload, number, expressions, evaluated, environment):
                 value = next(values)
                 environment[name] = value  # has to be evaluated already
                 expressions.extend(body)
-                expressions.append(("for!", payload, number))
+                expressions.append(("for!", payload, ~number))
             except StopIteration:
+                number = number if number >= 0 else ~number
                 evaluated[number] = True
             return True
         else:
