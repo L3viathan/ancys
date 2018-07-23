@@ -69,6 +69,9 @@ def evaluate(type_, payload, number, expressions, evaluated, environment):
         else:
             expressions.append(value)
         return False
+    elif type_ == "unset":
+        evaluated[number] = environment.pop(payload["name"], False)
+        return True
     elif type_ == "binop":
         left = payload["left"]
         right = payload["right"]
@@ -97,18 +100,27 @@ def evaluate(type_, payload, number, expressions, evaluated, environment):
             expressions.append(right)
         return False
     elif type_ == "if":
+        # TO DO: we need a seperate "if!" that checks if all are eval'd.
+        # If not we should _not_ mark this as eval'd
         condition = payload["condition"]
         body = payload["body"]
         if condition[2] in evaluated:
             if evaluated[condition[2]]:  # actual boolean test
                 expressions.extend(body)
-                evaluated[number] = True
+                # evaluated[number] = True
+                expressions.append(("if!", payload, ~number))
             else:
                 evaluated[number] = False
             return True
         else:
             expressions.append(condition)
         return False
+    elif type_ == "if!":
+        body = payload["body"]
+        if any(expr[2] not in evaluated for expr in body):
+            return False
+        evaluated[~number] = True
+        return True
     elif type_ == "while":
         condition = payload["condition"]
         body = payload["body"]

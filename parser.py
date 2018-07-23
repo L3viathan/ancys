@@ -1,6 +1,7 @@
 import json
 import itertools
 
+import click
 import tatsu
 from tatsu.util import asjson
 
@@ -12,7 +13,7 @@ grammar = r"""
 start = { expression ';' } $;
 
 expression = assignment | call | op | literal | datastructure |
-controlstructure | name  | ('(' expression ')');
+controlstructure | name | unset | ('(' expression ')');
 
 assignment = assignment:(name '=' expression) ;
 
@@ -31,6 +32,8 @@ unop = '+' | '-' | '!' ;
 
 @name
 name = name:(/[A-Za-z0-9_]+/);
+
+unset = unset:('~' name);
 
 int = int:('0' | /[1-9][0-9]*/) ;
 float = float:(/[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)/) ;
@@ -140,6 +143,12 @@ def parse_expression(expr, counter):
             values,
             next(counter),
         )
+    elif type_ == "unset":
+        return (
+            "unset",
+            values[1],
+            next(counter),
+        )
     else:
         print(type_)
         raise NotImplementedError
@@ -161,11 +170,21 @@ def parse(source):
     return parse_statements(ir, counter)
 
 
+def name_dependency_graph(ast):
+    # for each name, list the numbers that depend on it
+    ...
 
-if __name__ == '__main__':
-    with open("draft.anc") as f:
+
+@click.command()
+@click.argument("filename", default="draft.anc")
+def cli(filename):
+    with open(filename) as f:
         code = f.read()
 
     ast = parse(code)
 
     print(json.dumps(ast, indent=4))
+
+
+if __name__ == '__main__':
+    cli()

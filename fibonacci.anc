@@ -1,0 +1,18 @@
+x = y = 1;
+c = 0;
+while c != 10 {
+    c = c + 1;
+    h = y;
+    if h {
+        f = (y = (x + y));
+        if f {
+            g = (x = h);
+            if g {
+                print(x);
+                ~f;
+                ~g;
+                ~h;
+            };
+        };
+    };
+};

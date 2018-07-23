@@ -35,3 +35,15 @@ if two { print(3); };
 
 
 while x == 3 { x = 5; };
+
+# Since scope and "definedness" of variables is so important, we might need a
+# way to "undefine" a name.
+# We can't use a normal function:
+# unset(..)
+# unless we special-case it in the parser, because function calls are by-value
+# Syntax would work:
+~x;
+# What does "undefining" a name mean? Since it's about the _name_, not any
+# particular expression, we want to purge it from the environment.
+# We also have to find all expressions that depend on the name and unevaluate
+# them as well
