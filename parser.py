@@ -8,12 +8,14 @@ from tatsu.util import asjson
 grammar = r"""
 @@grammar::ANCYS
 
-@@keyword::if else for in true false
+@@keyword::if else for in true false function while return
 
 start = { expression ';' } $;
 
-expression = assignment | call | op | literal | datastructure |
+expression = function | assignment | call | op | literal | datastructure |
 controlstructure | name | unset | ('(' expression ')');
+
+function = function:( 'function' '(' name ')' '{' expressions '}' ) ;
 
 assignment = assignment:(name '=' expression) ;
 
@@ -149,6 +151,15 @@ def parse_expression(expr, counter):
             values[1],
             next(counter),
         )
+    elif type_ == "function":
+        return (
+            "function",
+            {
+                "argument": values[2]["name"],
+                "body": parse_statements(values[5], counter),
+            },
+            next(counter),
+        )
     else:
         print(type_)
         raise NotImplementedError
@@ -168,11 +179,6 @@ def parse(source):
     )
 
     return parse_statements(ir, counter)
-
-
-def name_dependency_graph(ast):
-    # for each name, list the numbers that depend on it
-    ...
 
 
 @click.command()

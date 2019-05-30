@@ -43,6 +43,5 @@ def ancys(filename):
             expressions.append(expr)
 
 
-
 if __name__ == '__main__':
     ancys()

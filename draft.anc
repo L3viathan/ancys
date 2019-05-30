@@ -47,3 +47,26 @@ while x == 3 { x = 5; };
 # particular expression, we want to purge it from the environment.
 # We also have to find all expressions that depend on the name and unevaluate
 # them as well
+
+
+# Next step: functions. Let's write them down first, then we'll think what they
+# imply:
+
+foo = function(arg) {
+    print("hi");
+    return = 3 + 5;
+};
+
+# I guess a return statement terminates the function, meaning in this case it
+# can happen that 8 is returned without "hi" being printed. The value of the
+# definition is the function itself.
+
+# For simplicity, maybe only a single version of a function can run at any
+# time. That would prevent recursion though. Might not be needed. How would
+# that prevention look like? I guess if you start a function, previous runs are
+# interrupted.
+
+foo(4);
+foo(7);
+
+# Only one of the functions will (probably) succeed.

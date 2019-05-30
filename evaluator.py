@@ -34,25 +34,52 @@ def unevaluate(something, evaluated):
 def evaluate(type_, payload, number, expressions, evaluated, environment):
     if number in evaluated:
         return True
-    if type_ in literals:
+    elif type_ in literals:
         # can immediately evaluate these
+        evaluated[number] = payload
+        return True
+    elif type_ == "function":
         evaluated[number] = payload
         return True
     elif type_ == "call":
         function = payload["function"]
         argument = payload["argument"]
         if function[2] in evaluated:
+            fn = evaluated[function[2]]
+            body = fn["body"]
             if argument[2] in evaluated:
                 # both are defined, we can actually call!
-                evaluated[number] = evaluated[function[2]](
-                    evaluated[argument[2]],
-                )
+                arg = evaluated[argument[2]]
+                if callable(fn):
+                    evaluated[number] = fn(arg)
+                else:
+                    # custom function
+                    assert isinstance(fn, dict)
+                    print("calling custom")
+                    environment[fn["argument"]] = arg
+                    # Whenever we reschedule this call for whatever reason
+                    # (parent expression greedy), this gets _unevaluated_.
+                    # Problems:
+                    # - this call can be scheduled again and again.
+                    expressions.extend(body)
+                    expressions.append(("call!", payload, ~number))
                 return True
             else:
+                unevaluate(body, evaluated)  # might be better to do this here
                 expressions.append(argument)
         else:
             expressions.append(function)
         return False
+    elif type_ == "call!":
+        function = payload["function"]
+        fn = evaluated[function[2]]
+        body = fn["body"]
+        # First check if the call is not done: In that case we reschedule
+        if any(expr[2] not in evaluated for expr in body):
+            return False
+        evaluated[number] = True  # "return value"?
+        unevaluate(payload["argument"], evaluated)  # enable calling again
+        return True
     elif type_ == "name":
         if payload in environment:
             # name is defined: assign its value to the expression
@@ -146,6 +173,7 @@ def evaluate(type_, payload, number, expressions, evaluated, environment):
                 evaluated[number] = False
             return True
         else:
+            # WRONG!! ???
             expressions.append(condition)
         return False
     elif type_ == "while!":
